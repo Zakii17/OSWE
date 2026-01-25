@@ -1,3 +1,5 @@
+1) Capturing a GET Request & Response:
+
 import requests
 
 url = "https://jsonplaceholder.typicode.com/posts/1"
@@ -6,3 +8,54 @@ response = requests.get(url)
 print("Status Code:", response.status_code)
 print("Headers:", response.headers)
 print("Body:", response.text)
+
+
+2) Capturing a POST Request & Response:
+
+import requests
+
+url = "https://jsonplaceholder.typicode.com/posts/1"
+response = requests.get(url)
+
+print("Status Code:", response.status_code)
+print("Headers:", response.headers)
+print("Body:", response.text)
+
+
+3) Add Headers to Your Requests:
+
+import requests
+
+url = "https://example.com/api"
+headers = {
+    "User-Agent": "Mozilla/5.0",
+    "Authorization": "Bearer YOUR_TOKEN"
+}
+
+response = requests.get(url, headers=headers)
+print(response.text)
+
+
+4) Capture Query Parameters (GET)
+import requests
+
+url = "https://jsonplaceholder.typicode.com/posts"
+params = {
+    "userId": 1
+}
+
+response = requests.get(url, params=params)
+print(response.json())
+
+
+5) Capture Form Data (POST)
+import requests
+
+url = "https://example.com/login"
+data = {
+    "username": "admin",
+    "password": "123456"
+}
+
+response = requests.post(url, data=data)
+print(response.text)
