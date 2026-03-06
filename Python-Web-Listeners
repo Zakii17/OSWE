@@ -59,3 +59,27 @@ data = {
 
 response = requests.post(url, data=data)
 print(response.text)
+
+
+6) Using Headers and proxy ( burpsuite debug request and response of python script)
+
+proxies = {'http':'http://127.0.0.1:8080','https':'http://127.0.0.1:8080'}
+
+headers = {
+    "Cookie": "JSESSIONID_APM_9090=F91676BEDBA25F1A45304C732B69C848",
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.5",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Priority": "u=0, i",
+    "Te": "trailers",
+    "Connection": "keep-alive",
+    "Content-Type": "application/x-www-form-urlencoded"
+}
+
+r = requests.post(url, data=data, headers=headers, proxies=proxies, verify=False)
